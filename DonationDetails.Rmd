@@ -1,0 +1,74 @@
+---
+title: 'Week 3: Peer-graded Assignment: R Markdown Presentation & Plotly'
+author: "Ken Wade"
+date: "November 11, 2016"
+output: ioslides_presentation
+logo: FCFLogo.png
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#library(readxl)
+library(plyr)
+library(plotly)
+
+filePath = "C:/Users/Ken/Documents/Ken/Continuing Education/Johns Hopkins School of Public Health - Data Science 9 - Developing Data Products/CourseWork/Week 3"
+
+XLS_filename = paste(filePath, "/donationdetails.csv", sep="")
+
+rawDonationData = read.csv(XLS_filename, header = TRUE, colClasses = c("character", "character", "character", "character", "character", "character", "character", "character", "character", "character", "character"))
+rawDonationData=rawDonationData[-nrow(rawDonationData), ]    # Remove last row
+
+DonationData = rawDonationData
+DonationData$Date    = as.Date(DonationData$Date, format = "%m/%d/%Y")
+DonationData$Amount  = as.numeric(gsub(",","", DonationData$Amount))
+#DonationData$Account = paste(substring(DonationData$Account, 3, 7), substring(DonationData$Account, 16, 28), sep="")
+DonationData$Account = substring(DonationData$Account, 16, 32)
+
+GivingStats = count(DonationData, "Account")
+colnames(GivingStats)[2] = "NumberOfDonations"
+GivingStats$ProjectTotal = tapply(DonationData$Amount, DonationData$Account, FUN=sum)
+GivingStats$AvgProjectDonation = round(GivingStats$ProjectTotal / GivingStats$NumberOfDonations, 2)
+```
+
+## # of Donations  vs.  Average Donation
+```{r, message=FALSE, warning=FALSE}
+
+plot_ly(GivingStats, x=~NumberOfDonations, y=~AvgProjectDonation, mode="markers", type="scatter",
+        color = ~as.factor(Account), size=~ProjectTotal) %>%
+  layout(#title="# of Donations  vs.  Average Donation",
+         xaxis=list(title="Year-to-Date # of Donations (Radius = Total Donations)"),
+         yaxis=list(title="Avgerage Project Donation"))
+```
+
+## # of Donations  vs.  Year-to-Date Total
+```{r, message=FALSE, warning=FALSE}
+
+plot_ly(GivingStats, x=~NumberOfDonations, y=~ProjectTotal, mode="markers", type="scatter",
+        color = ~as.factor(Account), size=~AvgProjectDonation) %>%
+  layout(#title="# of Donations  vs.  Year-to-Date Total",
+         xaxis=list(title="Year-to-Date # of Donations (Radius = Avg Project Donation)"),
+         yaxis=list(title="Project Year-to-Date Total Donations"))
+```
+
+## # Donations vs. YTD Total  vs. Average
+```{r, message=FALSE, warning=FALSE}
+
+plot_ly(GivingStats, x=~NumberOfDonations, y=~ProjectTotal, z=~AvgProjectDonation, mode="markers", type="scatter3d",
+        color = ~as.factor(Account)) %>%
+  layout(#title="# of Donations  vs.  Year-to-Date Total",
+         scene=list(
+           xaxis=list(title="Year-to-Date # of Donations (Radius = Avg Project Donation)"),
+           yaxis=list(title="Project Year-to-Date Total Donations"),
+           zaxis=list(title="Avgerage Project Donation")))
+```
+
+## Data Source:
+
+* Actual Year-to-Date Family Connection Foundation Donations
+
+* [Family Connection Foundation Web Page](http://www.thaiconnections.org/fcf)
+
